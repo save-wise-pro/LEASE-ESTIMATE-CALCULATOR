@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lease Calculator — Stamp Duty & Registration</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0f0e0b;
+    --blue: #1a3a6b;
+    --blue-deep: #0f2444;
+    --paper: #f5f0e8;
+    --cream: #ede7d9;
+    --gold: #c9a84c;
+    --gold-light: #e8d5a3;
+    --rust: #8b3a2a;
+    --sage: #4a5c4e;
+    --muted: #7a7060;
+    --border: #d4c9b0;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 0;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 52px;
+    padding-bottom: 32px;
+    border-bottom: 1.5px solid var(--border);
+    position: relative;
+  }
+
+  header::after {
+    content: '◆';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--paper);
+    padding: 0 12px;
+    color: var(--gold);
+    font-size: 12px;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 6vw, 54px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  h1 span { color: var(--gold); }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+  }
+
+  /* Input section */
+  .input-card {
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    padding: 36px 40px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .input-card::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 8px; right: -8px; bottom: -8px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    z-index: -1;
+  }
+
+  .field-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+
+  .field-group { display: flex; flex-direction: column; }
+
+  .input-wrap {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap:focus-within { border-color: var(--gold); }
+
+  .prefix {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--cream);
+    border-right: 1.5px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  input[type="number"], input[type="text"] {
+    border: none;
+    background: transparent;
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    color: var(--ink);
+    padding: 12px 14px;
+    width: 100%;
+    outline: none;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  select {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    padding: 12px 14px;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7060' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  select:focus { border-color: var(--gold); }
+
+  .calc-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: var(--blue);
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .calc-btn:hover {
+    background: var(--rust);
+    color: var(--gold-light);
+  }
+
+  .calc-btn:active { transform: scale(0.99); }
+
+  /* Rate badge */
+  .rate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 8px 16px;
+    background: var(--blue);
+    color: var(--gold-light);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    border-radius: 2px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: all 0.3s;
+  }
+
+  .rate-badge.visible { opacity: 1; transform: translateY(0); }
+  .rate-badge strong { font-size: 14px; }
+
+  /* Results */
+  .results {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+    pointer-events: none;
+  }
+
+  .results.show { opacity: 1; transform: translateY(0); pointer-events: all; }
+
+  .results-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .results-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .results-meta {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* Breakdown cards */
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .bk-card {
+    border: 1.5px solid var(--border);
+    border-radius: 3px;
+    padding: 20px;
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bk-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .bk-card.primary::before { background: var(--gold); }
+  .bk-card.stamp::before { background: var(--rust); }
+  .bk-card.reg::before { background: var(--sage); }
+
+  .bk-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .bk-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .bk-card.primary .bk-amount { color: var(--gold); }
+  .bk-card.stamp .bk-amount { color: var(--rust); }
+  .bk-card.reg .bk-amount { color: var(--sage); }
+
+  .bk-pct {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* Total row */
+  .total-row {
+    background: var(--blue);
+    color: var(--paper);
+    border-radius: 3px;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .total-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    margin-bottom: 4px;
+  }
+
+  .total-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(24px, 5vw, 38px);
+    font-weight: 900;
+    color: var(--gold);
+  }
+
+  .total-note {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  /* Ledger table */
+  .ledger {
+    border: 1.5px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .ledger-head {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+    background: var(--blue);
+    color: var(--gold-light);
+    padding: 10px 20px;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .ledger-row {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    transition: background 0.15s;
+    align-items: center;
+  }
+
+  .ledger-row:last-child { border-bottom: none; }
+  .ledger-row:hover { background: var(--cream); }
+
+  .ledger-row.active-row {
+    background: #fdf6e3;
+    border-left: 3px solid var(--gold);
+  }
+
+  .ledger-row.active-row td, .ledger-row.active-row > * { font-weight: 500; }
+
+  .tier-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    background: var(--cream);
+    border: 1px solid var(--border);
+  }
+
+  .ledger-row.active-row .tier-tag {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--gold);
+  }
+
+  .col-r { text-align: right; }
+
+  /* Print button */
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .btn-outline {
+    flex: 1;
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-outline:hover { border-color: var(--blue); background: var(--blue); color: var(--gold); }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 580px) {
+    .input-card { padding: 24px 20px; }
+    .input-row { grid-template-columns: 1fr; }
+    .breakdown-grid { grid-template-columns: 1fr; }
+    .ledger-head, .ledger-row { grid-template-columns: 2fr 1fr 1fr; font-size: 11px; }
+    .ledger-head > :nth-child(4),
+    .ledger-head > :nth-child(5),
+    .ledger-row > :nth-child(4),
+    .ledger-row > :nth-child(5) { display: none; }
+    .total-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .total-note { text-align: left; }
+  }
+
+  @media print {
+    body { background: white; }
+    .calc-btn, .actions, .input-card { display: none; }
+    .results { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Property Registration</div>
+    <h1>Lease <span>Duty</span><br>Calculator</h1>
+    <div class="subtitle">Stamp Duty &amp; Registration Fee Estimator · Kerala</div>
+  </header>
+
+  <div class="input-card">
+    <div class="input-row">
+      <div class="field-group">
+        <label class="field-label" for="amount">Total Lease Amount</label>
+        <div class="input-wrap">
+          <span class="prefix">₹</span>
+          <input type="number" id="amount" placeholder="e.g. 4060000" min="0" step="1000">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="years">Lease Duration</label>
+        <select id="years">
+          <option value="" disabled selected>— Select Duration —</option>
+          <option value="1-5">1 – 5 Years</option>
+          <option value="5-10">5 – 10 Years</option>
+          <option value="10-20">10 – 20 Years</option>
+          <option value="20-30">20 – 30 Years</option>
+          <option value="30-100">30 – 100 Years</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="rate-badge" class="rate-badge">
+      Applicable SD&amp;RF rate: <strong id="badge-rate">—</strong>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">Calculate Stamp Duty &amp; Registration Fee</button>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="results-header">
+      <div class="results-title">Calculation Result</div>
+      <div class="results-meta" id="results-meta"></div>
+    </div>
+
+    <div class="breakdown-grid">
+      <div class="bk-card primary">
+        <div class="bk-label">SD&amp;RF Base (Calculated)</div>
+        <div class="bk-amount" id="r-sdrf">₹0</div>
+        <div class="bk-pct" id="r-sdrf-pct">— % of lease amount</div>
+      </div>
+      <div class="bk-card stamp">
+        <div class="bk-label">Stamp Duty (8% of base)</div>
+        <div class="bk-amount" id="r-stamp">₹0</div>
+        <div class="bk-pct" id="r-stamp-pct">—</div>
+      </div>
+      <div class="bk-card reg">
+        <div class="bk-label">Registration Fee (2% of base)</div>
+        <div class="bk-amount" id="r-reg">₹0</div>
+        <div class="bk-pct" id="r-reg-pct">—</div>
+      </div>
+    </div>
+
+    <div class="total-row">
+      <div>
+        <div class="total-label">Total Government Fees</div>
+        <div class="total-amount" id="r-total">₹0</div>
+      </div>
+      <div class="total-note" id="r-note"></div>
+    </div>
+
+    <!-- Full comparison ledger -->
+    <div class="ledger">
+      <div class="ledger-head">
+        <div>Lease Term</div>
+        <div class="col-r">Rate</div>
+        <div class="col-r">SD&amp;RF Base</div>
+        <div class="col-r">Stamp Duty</div>
+        <div class="col-r">Reg. Fee</div>
+      </div>
+      <div id="ledger-body"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-outline" onclick="window.print()">⎙ Print / Save PDF</button>
+      <button class="btn-outline" onclick="copyResults()">⎘ Copy Summary</button>
+      <button class="btn-outline" onclick="resetForm()">↺ Reset</button>
+    </div>
+  </div>
+
+  <footer>
+    Personal use only · Based on Kerala stamp duty slab rates · Figures are estimates · MADE FOR MUJEEB RAHMAN T
+  </footer>
+
+</div>
+
+<script>
+  const TIERS = [
+    { label: '1 – 5 Years',    key: '1-5',    rate: 0.10 },
+    { label: '5 – 10 Years',   key: '5-10',   rate: 0.20 },
+    { label: '10 – 20 Years',  key: '10-20',  rate: 0.35 },
+    { label: '20 – 30 Years',  key: '20-30',  rate: 0.60 },
+    { label: '30 – 100 Years', key: '30-100', rate: 0.90 },
+  ];
+
+  const STAMP_PCT = 0.08;
+  const REG_PCT   = 0.02;
+
+  function fmt(n) {
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+
+  function fmtPct(n) {
+    return (n * 100).toFixed(0) + '%';
+  }
+
+  // Update badge on selection change
+  document.getElementById('years').addEventListener('change', function() {
+    const tier = TIERS.find(t => t.key === this.value);
+    const badge = document.getElementById('rate-badge');
+    if (tier) {
+      document.getElementById('badge-rate').textContent = fmtPct(tier.rate) + ' of lease amount';
+      badge.classList.add('visible');
+    } else {
+      badge.classList.remove('visible');
+    }
+  });
+
+  function calculate() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const key    = document.getElementById('years').value;
+
+    if (!amount || amount <= 0) { alert('Please enter a valid lease amount.'); return; }
+    if (!key) { alert('Please select a lease duration.'); return; }
+
+    const tier  = TIERS.find(t => t.key === key);
+    const base  = amount * tier.rate;
+    const stamp = base * STAMP_PCT;
+    const reg   = base * REG_PCT;
+    const total = stamp + reg;
+
+    // Update cards
+    document.getElementById('r-sdrf').textContent   = fmt(base);
+    document.getElementById('r-sdrf-pct').textContent = fmtPct(tier.rate) + ' of ' + fmt(amount);
+    document.getElementById('r-stamp').textContent  = fmt(stamp);
+    document.getElementById('r-stamp-pct').textContent = '= ' + fmtPct(STAMP_PCT) + ' × ' + fmt(base);
+    document.getElementById('r-reg').textContent    = fmt(reg);
+    document.getElementById('r-reg-pct').textContent = '= ' + fmtPct(REG_PCT) + ' × ' + fmt(base);
+    document.getElementById('r-total').textContent  = fmt(total);
+    document.getElementById('results-meta').textContent = tier.label + ' · ' + fmt(amount);
+    document.getElementById('r-note').innerHTML =
+      'Stamp Duty: ' + fmt(stamp) + '<br>Registration Fee: ' + fmt(reg) + '<br>Lease Amount: ' + fmt(amount);
+
+    // Build ledger
+    let rows = '';
+    TIERS.forEach(t => {
+      const b = amount * t.rate;
+      const s = b * STAMP_PCT;
+      const r = b * REG_PCT;
+      const active = t.key === key ? 'active-row' : '';
+      rows += `<div class="ledger-row ${active}">
+        <div><span class="tier-tag">${t.label}</span></div>
+        <div class="col-r">${fmtPct(t.rate)}</div>
+        <div class="col-r">${fmt(b)}</div>
+        <div class="col-r">${fmt(s)}</div>
+        <div class="col-r">${fmt(r)}</div>
+      </div>`;
+    });
+    document.getElementById('ledger-body').innerHTML = rows;
+
+    // Show
+    document.getElementById('results').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  function resetForm() {
+    document.getElementById('amount').value = '';
+    document.getElementById('years').value = '';
+    document.getElementById('rate-badge').classList.remove('visible');
+    document.getElementById('results').classList.remove('show');
+  }
+
+  function copyResults() {
+    const amt   = parseFloat(document.getElementById('amount').value);
+    const key   = document.getElementById('years').value;
+    if (!amt || !key) { alert('Nothing to copy yet.'); return; }
+    const tier  = TIERS.find(t => t.key === key);
+    const base  = amt * tier.rate;
+    const stamp = base * STAMP_PCT;
+    const reg   = base * REG_PCT;
+    const total = stamp + reg;
+
+    const text = [
+      'LEASE DUTY CALCULATION',
+      '─────────────────────',
+      'Lease Amount : ' + fmt(amt),
+      'Lease Term   : ' + tier.label,
+      'SD&RF Rate   : ' + fmtPct(tier.rate),
+      '─────────────────────',
+      'SD&RF Base   : ' + fmt(base),
+      'Stamp Duty   : ' + fmt(stamp),
+      'Reg. Fee     : ' + fmt(reg),
+      '─────────────────────',
+      'TOTAL FEES   : ' + fmt(total),
+    ].join('\n');
+
+    navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!')).catch(() => alert('Copy failed — please select manually.'));
+  }
+</script>
+</body>
+</html>
